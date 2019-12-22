@@ -82,24 +82,33 @@ def process_lilunke_row(sheet, row_num):
 
 
 def read_excel(excel_full_name):
+    sheet_list = []
     wb = openpyxl.load_workbook(excel_full_name)
-    first_sheet_name = wb.sheetnames[0]
-    sheet = wb[first_sheet_name]
-    print("处理"+excel_full_name, "的子表：", sheet.title)
-    for row in sheet.rows:
-        line = []
-        for cell in row:
-            line.append(cell.value)
-        #print(line)
-    return first_sheet_name, sheet
+    for sheet_name in wb.sheetnames:
+        sheet_list.append({"sheet_name":sheet_name, "sheet":wb[sheet_name]})
+    #first_sheet_name = wb.sheetnames[0]
+    #sheet = wb[first_sheet_name]
+    
+    #for row in sheet.rows:
+    #    line = []
+    #    for cell in row:
+    #        line.append(cell.value)
+    #    #print(line)
+    #return first_sheet_name, sheet
+    return sheet_list
 
-def write_excel(excel_full_name, sheet_name, old_sheet):
+def write_excel(excel_full_name, old_sheet_list):
     wb = openpyxl.Workbook()
-    new_sheet = wb.create_sheet(index=0, title=sheet_name)
-    for row_num in range(1, old_sheet.max_row+1):
-        for col_num in range(1, old_sheet.max_column+1):
-            value = old_sheet.cell(row = row_num, column = col_num).value
-            new_sheet.cell(row=row_num, column=col_num, value=value)
+    sheet_indx = 0
+    for sheet_info in old_sheet_list:
+        sheet_name = sheet_info["sheet_name"]
+        old_sheet = sheet_info["sheet"]
+        new_sheet = wb.create_sheet(index=sheet_indx, title=sheet_name)
+        sheet_indx = sheet_indx + 1
+        for row_num in range(1, old_sheet.max_row+1):
+            for col_num in range(1, old_sheet.max_column+1):
+                value = old_sheet.cell(row = row_num, column = col_num).value
+                new_sheet.cell(row=row_num, column=col_num, value=value)
     wb.save(excel_full_name)
 
 def is_number(n):
@@ -159,10 +168,15 @@ if __name__ == '__main__':
     for filename in filenames:
         excel_path = 'input/' + filename
         file_name = os.path.basename(excel_path)
-        sheet_name, sheet = read_excel(excel_path)
-        process_sheets(sheet_name, sheet)
+        sheet_list = read_excel(excel_path)
+        for sheet_info in sheet_list:
+            sheet_name = sheet_info["sheet_name"]
+            sheet = sheet_info["sheet"]
+            print("处理"+excel_path, "的子表：", sheet.title)
+            process_sheets(sheet_name, sheet)
+            
         output_excel_name = "output/"+"核算成功_"+file_name
-        write_excel(output_excel_name, sheet_name, sheet)
+        write_excel(output_excel_name, sheet_list)
         print(os.path.basename(output_excel_name), '写入成功，在output目录查看')
     
     input("核算成功!")
